@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Scaffold
@@ -28,6 +29,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +54,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LazyLayoutsTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ListaSimples(
+                    ListOfOptions(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -59,42 +63,42 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class Produto(val id: Int, val nome: String, val preco: Double, val imagem: String)
+data class product(val id: Int, val name: String, val price: Double, val image: String)
 
-data class ProdutoState(val produtos: List<Produto> = emptyList())
+data class productState(val products: List<product> = emptyList())
 
-class ProdutoViewModel : ViewModel() {
-    private val _state = MutableStateFlow(ProdutoState())
-    val state: StateFlow<ProdutoState> = _state
+class productViewModel : ViewModel() {
+    private val _state = MutableStateFlow(productState())
+    val state: StateFlow<productState> = _state
 
     init {
-        gerarProdutos()
+        generateproducts()
     }
 
-    private fun gerarProdutos() {
-        val listaProdutos = List(60) {
-            Produto(
+    private fun generateproducts() {
+        val productslist = List(60) {
+            product(
                 id = it,
-                nome = "Produto $it",
-                preco = (10..100).random().toDouble(),
-                imagem = "https://picsum.photos/200?random=$it"
+                name = "Product $it",
+                price = (10..100).random().toDouble(),
+                image = "https://picsum.photos/200?random=$it"
             )
         }
-        _state.value = ProdutoState(produtos = listaProdutos)
+        _state.value = productState(products = productslist)
     }
 }
 
 @Composable
-fun ProdutoCard(produto: Produto, onCLick: (Produto) -> Unit) {
+fun productCard(product: product, onCLick: (product) -> Unit) {
     Card(
         modifier = Modifier.padding(8.dp),
         elevation = CardDefaults.cardElevation(4.dp),
-        onClick = {onCLick(produto)}
+        onClick = {onCLick(product)}
     ) {
         Row() {
             AsyncImage(
-                model = produto.imagem,
-                contentDescription = produto.nome,
+                model = product.image,
+                contentDescription = product.name,
                 modifier = Modifier
                     .size(80.dp)
                     .padding(8.dp)
@@ -102,14 +106,14 @@ fun ProdutoCard(produto: Produto, onCLick: (Produto) -> Unit) {
             )
             Column() {
                 Text(
-                    "Nome: ${produto.nome}",
+                    "Name: ${product.name}",
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(4.dp)
                 )
                 Text(
-                    "Valor: ${produto.preco}",
+                    "Value: ${product.price}",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(4.dp)
@@ -121,20 +125,20 @@ fun ProdutoCard(produto: Produto, onCLick: (Produto) -> Unit) {
 }
 
 @Composable
-fun ListaSimples(modifier: Modifier = Modifier, viewModel: ProdutoViewModel = viewModel()) {
+fun SimpleList(modifier: Modifier = Modifier, viewModel: productViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
-    val contexto = LocalContext.current
+    val context = LocalContext.current
 
     LazyColumn() {
         items(
-            state.produtos,
-            key = { produto -> produto.id }
+            state.products,
+            key = { product -> product.id }
         )
-        { produto ->
-            ProdutoCard(produto) {
+        { product ->
+            productCard(product) {
                 Toast.makeText(
-                    contexto,
-                    "Clicou em ${produto.nome}",
+                    context,
+                    "Clicked ${product.name}",
                     Toast.LENGTH_LONG).show()
             }
         }
@@ -164,26 +168,155 @@ fun GreetingPreview() {
     }
 }
 
+@Composable
+fun RowList(modifier: Modifier = Modifier, viewModel: productViewModel = viewModel()) {
+    val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    Column(modifier = modifier.fillMaxSize()) {
+        Text(
+            text = "Products (Horizontal Scroll)",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                state.products,
+                key = { product -> product.id }
+            ) { product ->
+                horizontalProductCard(product) {
+                    Toast.makeText(
+                        context,
+                        "Clicked ${product.name}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun horizontalProductCard(product: product, onClick: (product) -> Unit) {
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .size(width = 160.dp, height = 200.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        onClick = { onClick(product) }
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(8.dp)
+        ) {
+            AsyncImage(
+                model = product.image,
+                contentDescription = product.name,
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+            Text(
+                "Name: ${product.name}",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(text = "R$ ${String.format("%.2f", product.price)}")
+        }
+    }
+}
+
+@Composable
+fun GridList(modifier: Modifier = Modifier, viewModel: productViewModel = viewModel()) {
+    val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    Column(modifier = modifier.fillMaxSize()) {
+        Text(
+            text = "Products (Grid Layout)",
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp)
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2), // Two columns, can be changed to 3
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                state.products,
+                key = { product -> product.id }
+            ) { product ->
+                ProductCardGrid(product) {
+                    Toast.makeText(
+                        context,
+                        "Clicked ${product.name}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProductCardGrid(product: product, onClick: (product) -> Unit) {
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(4.dp),
+        onClick = { onClick(product) }
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            AsyncImage(
+                model = product.image,
+                contentDescription = product.name,
+                modifier = Modifier
+                    .size(150.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+            Text(
+                "Name: ${product.name}",
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Text(
+                text = "R$ ${String.format("%.2f", product.price)}",
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
 enum class LayoutType {
-    LISTA,       // LazyColumn
+    LIST,       // LazyColumn
     ROW,         // LazyRow
     GRID         // LazyVerticalGrid
 }
 
 @Composable
 fun ListOfOptions(modifier: Modifier = Modifier) {
-    var layoutType by remember { mutableStateOf(LayoutType.LISTA) }
+    var layoutType by remember { mutableStateOf(LayoutType.LIST) }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Botões para alternar o layout
+        // Buttons to switch layouts
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = { layoutType = LayoutType.LISTA }) {
-                Text("Lista")
+            Button(onClick = { layoutType = LayoutType.LIST }) {
+                Text("List")
             }
             Button(onClick = { layoutType = LayoutType.ROW }) {
                 Text("Horizontal")
@@ -193,11 +326,11 @@ fun ListOfOptions(modifier: Modifier = Modifier) {
             }
         }
 
-        // Exibe o layout selecionado
+        // Displays the selected layout
         when (layoutType) {
-            LayoutType.LISTA -> ListaSimples(modifier = Modifier.weight(1f))
-            LayoutType.ROW -> ListaEmRow(modifier = Modifier.weight(1f))
-            LayoutType.GRID -> ListaEmGrid(modifier = Modifier.weight(1f))
+            LayoutType.LIST -> SimpleList(modifier = Modifier.weight(1f))
+            LayoutType.ROW -> RowList(modifier = Modifier.weight(1f))
+            LayoutType.GRID -> GridList(modifier = Modifier.weight(1f))
         }
     }
 }
